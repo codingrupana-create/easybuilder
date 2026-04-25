@@ -1,0 +1,851 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timeline Modern Resume</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --text-color: #555;
+            --bg-color: #fff;
+            --sidebar-bg: #f4f6f7;
+            --timeline-color: #e0e0e0;
+
+            /* Design Variables */
+            --sidebar-width: 32%;
+            --base-font-size: 14px;
+            --section-gap: 30px;
+            --content-padding: 40px;
+            --item-gap: 25px;
+            font-size: var(--base-font-size);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #e9ecef;
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+
+        .resume-page {
+            width: 210mm;
+            min-height: 297mm;
+            background: #fff;
+            margin: 20px auto;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* HEADER */
+        header {
+            background: var(--primary-color);
+            color: white;
+            padding: 40px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .header-left h2 {
+            font-size: 1.1rem;
+            font-weight: 400;
+            opacity: 0.9;
+            background: var(--accent-color);
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 4px;
+        }
+
+        .header-right {
+            text-align: right;
+            font-size: 0.9rem;
+        }
+
+        .contact-item {
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            position: relative;
+            padding-right: 30px;
+            /* Extends hover area */
+        }
+
+        .contact-item:hover .del-btn {
+            display: inline-block;
+        }
+
+        .fresher-controls {
+            float: right;
+            font-size: 0.8rem;
+            font-weight: normal;
+            display: none;
+        }
+
+        .ui-controls .profile-select {
+            width: 100%;
+            padding: 5px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .contact-item i {
+            color: var(--accent-color);
+            width: 15px;
+            text-align: center;
+        }
+
+        /* MAIN CONTENT ROW */
+        .content-row {
+            display: flex;
+            flex: 1;
+            /* Gradient to simulate full-height sidebar */
+            background: linear-gradient(to right, var(--sidebar-bg) var(--sidebar-width), transparent var(--sidebar-width));
+            background-repeat: no-repeat;
+            background-size: 100% 297mm;
+            /* Limit to one A4 page height */
+        }
+
+        /* LEFT SIDEBAR */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: transparent;
+            /* Changed to transparent for gradient to show */
+            padding: 30px;
+            border-right: 1px solid #eee;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            font-weight: 700;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            letter-spacing: 0.5px;
+        }
+
+        .profile-text {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            text-align: justify;
+        }
+
+        .skill-item {
+            margin-bottom: calc(var(--item-gap) * 0.5);
+        }
+
+        .skill-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .skill-bar-bg {
+            height: 6px;
+            background: #ddd;
+            border-radius: 3px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .skill-bar-fill {
+            height: 100%;
+            background: var(--accent-color);
+            border-radius: 3px;
+        }
+
+        .list-items li {
+            list-style: none;
+            margin-bottom: calc(var(--item-gap) * 0.4);
+            font-size: 0.9rem;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .list-items li::before {
+            content: "•";
+            color: var(--accent-color);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        /* RIGHT MAIN CONTENT (TIMELINE) */
+        .main-content {
+            width: calc(100% - var(--sidebar-width));
+            padding: var(--content-padding);
+        }
+
+        .timeline-section {
+            margin-bottom: var(--section-gap);
+            position: relative;
+        }
+
+        /* The Vertical Line */
+        .timeline-container {
+            position: relative;
+            border-left: 2px solid var(--timeline-color);
+            margin-left: 10px;
+            padding-left: 25px;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: var(--item-gap);
+        }
+
+        /* Dot on the line */
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -32px;
+            /* Adjust based on padding/border */
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border: 3px solid var(--accent-color);
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .timeline-role {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .timeline-company {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 2px;
+        }
+
+        .timeline-date {
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            font-style: italic;
+            margin-bottom: 8px;
+            display: inline-block;
+            background: #f0f7fb;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .timeline-desc {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #444;
+        }
+
+        /* EDIT MODE UI */
+        .ui-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            width: 280px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .control-group input[type="color"] {
+            width: 100%;
+            height: 35px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .btn-print {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-print:hover {
+            opacity: 0.9;
+        }
+
+        .add-btn,
+        .del-btn {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            cursor: pointer;
+            border: none;
+            border-radius: 3px;
+            margin-top: 5px;
+        }
+
+        .add-btn {
+            background: #27ae60;
+            color: white;
+            display: inline-block;
+        }
+
+        .del-btn {
+            background: #e74c3c;
+            color: white;
+            margin-left: 10px;
+            display: none;
+        }
+
+        .timeline-item:hover .del-btn,
+        .skill-item:hover .del-btn,
+        .list-items li:hover .del-btn,
+        .contact-item:hover .del-btn {
+            display: inline-block;
+        }
+
+        body.edit-mode .fresher-controls {
+            display: inline-block;
+        }
+
+        [contenteditable]:hover {
+            outline: 1px dashed #aaa;
+            background: rgba(255, 255, 0, 0.1);
+        }
+
+        .personal-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--item-gap);
+            margin-top: 15px;
+        }
+
+        .personal-item {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 6px;
+            border-left: 3px solid var(--accent-color);
+            position: relative;
+        }
+
+        .personal-label {
+            font-size: 0.8rem;
+            color: #888;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+            display: block;
+        }
+
+        .personal-value {
+            font-size: 0.95rem;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .personal-item:hover .del-btn {
+            display: inline-block;
+        }
+
+        /* FOOTER */
+        .footer-section {
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .signature-box {
+            text-align: center;
+        }
+
+        .signature-line {
+            width: 200px;
+            border-top: 1px solid #333;
+            margin-top: 40px;
+            font-weight: 600;
+        }
+
+        /* Dashed Button for Custom Section */
+        .btn-dashed {
+            background: transparent;
+            border: 2px dashed #999;
+            color: #666;
+            width: 100%;
+            padding: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: none;
+            /* Show only in edit mode */
+        }
+
+        body.edit-mode .btn-dashed {
+            display: block;
+        }
+
+        /* PRINT MEDIA QUERY */
+        @media print {
+            body {
+                background: white;
+                margin: 0;
+            }
+
+            .resume-page {
+                margin: 0;
+                box-shadow: none;
+                width: 100%;
+                min-height: 100vh;
+            }
+
+            .ui-controls,
+            .add-btn,
+            .del-btn,
+            .fresher-controls,
+            .btn-dashed,
+            .footer-section button {
+                display: none !important;
+            }
+
+            [contenteditable] {
+                outline: none !important;
+                background: transparent !important;
+            }
+
+            /* Ensure background graphics print */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .content-row {
+                /* Ensure gradient prints */
+                background: linear-gradient(to right, var(--sidebar-bg) var(--sidebar-width), transparent var(--sidebar-width)) !important;
+                background-repeat: no-repeat !important;
+                background-size: 100% 297mm !important; /* Limit to one A4 page height */
+            }
+        }
+    </style>
+</head>
+
+<body class="edit-mode">
+
+    <!-- UI Controls -->
+    <div class="ui-controls" id="uiControls">
+        <h3>Design Controls</h3>
+        <button class="btn" style="background: #333; color: white; margin-bottom: 10px;"
+            onclick="document.body.classList.toggle('edit-mode')">
+            <i class="fas fa-eye"></i> Toggle Preview
+        </button>
+        <hr style="margin: 10px 0; border: 0; border-top: 1px solid #eee;">
+
+        <div class="control-group">
+            <label>Primary Color</label>
+            <input type="color" id="primaryColorPick" value="#2c3e50">
+        </div>
+        <div class="control-group">
+            <label>Accent Color</label>
+            <input type="color" id="accentColorPick" value="#3498db">
+        </div>
+
+        <label style="display:block; font-weight:bold; font-size:0.9em; margin-top:5px;">Sidebar Width</label>
+        <input type="range" min="20" max="50" value="32" oninput="updateVar('--sidebar-width', this.value+'%')">
+
+        <label style="display:block; font-weight:bold; font-size:0.9em; margin-top:5px;">Font Size</label>
+        <input type="range" min="12" max="18" value="14" oninput="updateVar('--base-font-size', this.value+'px')">
+
+        <label style="display:block; font-weight:bold; font-size:0.9em; margin-top:5px;">Section Gap</label>
+        <input type="range" min="10" max="60" value="30" oninput="updateVar('--section-gap', this.value+'px')">
+
+        <label style="display:block; font-weight:bold; font-size:0.9em; margin-top:5px;">Content Padding</label>
+        <input type="range" min="10" max="80" value="40" oninput="updateVar('--content-padding', this.value+'px')">
+
+        <label style="display:block; font-weight:bold; font-size:0.9em; margin-top:5px;">Item Gap</label>
+        <input type="range" min="10" max="50" value="25" oninput="updateVar('--item-gap', this.value+'px')">
+
+        <div style="margin-top: 15px;"></div>
+        <button class="btn btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print / Save PDF</button>
+    </div>
+
+    <!-- Resume Page -->
+    <div class="resume-page">
+        <!-- Header -->
+        <header>
+            <div class="header-left">
+                <h1 contenteditable="true"></h1>
+                <h2 contenteditable="true"></h2>
+            </div>
+            <div class="header-right">
+                <div class="contact-item">
+                    <span contenteditable="true"></span> <i class="fas fa-envelope"></i>
+                    <button class="del-btn" onclick="this.parentElement.remove()"
+                        style="position: absolute; right: 0; top: 0;">x</button>
+                </div>
+                <div class="contact-item">
+                    <span contenteditable="true"></span> <i class="fas fa-phone"></i>
+                    <button class="del-btn" onclick="this.parentElement.remove()"
+                        style="position: absolute; right: 0; top: 0;">x</button>
+                </div>
+                <div class="contact-item">
+                    <span contenteditable="true"></span> <i class="fas fa-map-marker-alt"></i>
+                    <button class="del-btn" onclick="this.parentElement.remove()"
+                        style="position: absolute; right: 0; top: 0;">x</button>
+                </div>
+                <div class="contact-item">
+                    <span contenteditable="true"></span> <i class="fab fa-linkedin"></i>
+                    <button class="del-btn" onclick="this.parentElement.remove()"
+                        style="position: absolute; right: 0; top: 0;">x</button>
+                </div>
+                <button class="add-btn" onclick="addContact()">+ Add</button>
+            </div>
+        </header>
+
+        <div class="content-row">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+
+                <!-- Skills -->
+                <div class="section-title" contenteditable="true">Skills</div>
+                <div id="skillsContainer">
+                    
+                        <div class="skill-item">
+                            <div class="skill-name">
+                                <span contenteditable="true"></span>
+                                <button class="del-btn" onclick="this.parentElement.parentElement.remove()">x</button>
+                            </div>
+                            <div class="skill-bar-bg">
+                                <div class="skill-bar-fill" style="width: %"></div>
+                            </div>
+                        </div>
+                    
+                </div>
+                <button class="add-btn" onclick="addSkill()">+ Add Skill</button>
+                <div style="margin-bottom: var(--section-gap);"></div>
+
+                <!-- Languages -->
+                <div class="section-title" contenteditable="true">Languages</div>
+                <ul class="list-items" id="langList">
+                    
+                        <li>
+                            <span contenteditable="true"></span>
+                            <button class="del-btn" onclick="this.parentElement.remove()">x</button>
+                        </li>
+                    
+                </ul>
+                <button class="add-btn" onclick="addListItem('langList')">+ Add Language</button>
+                <div style="margin-bottom: var(--section-gap);"></div>
+
+                <!-- Hobbies -->
+                <div class="section-title" contenteditable="true">Interests</div>
+                <ul class="list-items" id="hobbyList">
+                    
+                        <li>
+                            <span contenteditable="true"></span>
+                            <button class="del-btn" onclick="this.parentElement.remove()">x</button>
+                        </li>
+                    
+                </ul>
+                <button class="add-btn" onclick="addListItem('hobbyList')">+ Add Interest</button>
+
+            </aside>
+
+            <!-- Main Timeline Content -->
+            <main class="main-content">
+
+                <!-- Profile -->
+                <div class="section-title" contenteditable="true">Profile</div>
+                <div class="profile-text" contenteditable="true" id="profileText">
+                    
+                </div>
+                <div class="ui-controls"
+                    style="position: static; box-shadow: none; padding: 0; margin-bottom: 20px; width: 100%;">
+                    <select class="profile-select" onchange="updateProfile(this.value); this.selectedIndex=0;">
+                        <option value="">-- Quick Profile Text --</option>
+                        <option
+                            value="Results-oriented Project Manager with over 7 years of experience in leading cross-functional teams to deliver complex software solutions. Expert in Agile methodologies, risk management, and strategic planning.">
+                            Experienced PM</option>
+                        <option
+                            value="Motivated fresher seeking an entry-level position to utilize my skills in software development and contribute to team success. Rapid learner and dedicated professional.">
+                            Fresher</option>
+                        <option
+                            value="Creative professional with a proven track record of designing intuitive user experiences and delivering high-quality visual assets. Passionate about innovation and design excellence.">
+                            Creative</option>
+                    </select>
+                </div>
+
+                <!-- Experience -->
+                <div class="section-title" contenteditable="true">
+                    <i class="fas fa-briefcase" style="margin-right: 10px;"></i> Work Experience
+                    <div class="fresher-controls">
+                        <label><input type="checkbox" id="fresherCheck" onchange="toggleFresherMode()"> I am a
+                            Fresher</label>
+                    </div>
+                </div>
+                <div class="timeline-container" id="expContainer">
+                    
+                        <div class="timeline-item">
+                            <div class="timeline-role" contenteditable="true"></div>
+                            <div class="timeline-company" contenteditable="true"></div>
+                            <div class="timeline-date" contenteditable="true"></div>
+                            <div class="timeline-desc" contenteditable="true"></div>
+                            <button class="del-btn" onclick="this.parentElement.remove()"
+                                style="position: absolute; top: 0; right: 0;">Delete</button>
+                        </div>
+                    
+                </div>
+                <div id="fresherSection"
+                    style="display:none; text-align:center; font-style:italic; color:#777; margin-bottom:15px; padding: 20px; border: 1px dashed #ccc;">
+                    <p>Fresher - Seeking entry level opportunities.</p>
+                </div>
+                <button class="add-btn" id="addExpBtn" onclick="addExperience()">+ Add Role</button>
+
+                <div style="margin-bottom: var(--section-gap);"></div>
+
+                <!-- Education -->
+                <div class="section-title" contenteditable="true"><i class="fas fa-graduation-cap"
+                        style="margin-right: 10px;"></i> Education</div>
+                <div class="timeline-container" id="eduContainer">
+                    
+                        <div class="timeline-item">
+                            <div class="timeline-role" contenteditable="true"></div>
+                            <div class="timeline-company" contenteditable="true"></div>
+                            <div class="timeline-date" contenteditable="true"></div>
+                            <div class="timeline-desc" contenteditable="true"></div>
+                            <button class="del-btn" onclick="this.parentElement.remove()"
+                                style="position: absolute; top: 0; right: 0;">Delete</button>
+                        </div>
+                    
+                </div>
+                <button class="add-btn" onclick="addEducation()">+ Add Degree</button>
+
+                <div style="margin-bottom: var(--section-gap);"></div>
+
+                <!-- Personal Details -->
+                <div class="timeline-section" style="margin-bottom: var(--section-gap);">
+                    <div class="section-title" contenteditable="true"><i class="fas fa-user"
+                            style="margin-right: 10px;"></i> Personal Details</div>
+                    <div class="personal-grid" id="personalContainer">
+                        
+                            <div class="personal-item">
+                                <span class="personal-label" contenteditable="true"></span>
+                                <div class="personal-value" contenteditable="true"></div>
+                                <button class="del-btn" onclick="this.parentElement.remove()"
+                                    style="position: absolute; top: 5px; right: 5px;">x</button>
+                            </div>
+                        
+                    </div>
+                    <button class="add-btn" onclick="addPersonalDetail()">+ Add Detail</button>
+                </div>
+
+                <!-- Custom Section Button -->
+                <button class="btn-dashed" onclick="addCustomSection()">+ Add Custom Section</button>
+
+                <!-- Footer: Declaration, Date, Signature -->
+                <div class="timeline-section" style="margin-top: 40px;">
+                    <div class="section-title" contenteditable="true">Declaration</div>
+                    <p contenteditable="true" style="font-style: italic; color: #555;">I hereby declare that the
+                        above-mentioned information is correct to the best of my knowledge and belief.</p>
+
+                    <div class="footer-section">
+                        <div>
+                            <strong>Date:</strong> <span contenteditable="true">22/04/2026</span>
+                        </div>
+                        <div class="signature-box">
+                            <div class="signature-line" contenteditable="true">Signature</div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // --- Color Pickers ---
+        const root = document.documentElement;
+
+        document.getElementById('primaryColorPick').addEventListener('input', (e) => {
+            root.style.setProperty('--primary-color', e.target.value);
+        });
+
+        document.getElementById('accentColorPick').addEventListener('input', (e) => {
+            root.style.setProperty('--accent-color', e.target.value);
+        });
+
+        // --- Helper Functions ---
+
+        function updateVar(name, val) {
+            root.style.setProperty(name, val);
+        }
+
+        function addSkill() {
+            const container = document.getElementById('skillsContainer');
+            const div = document.createElement('div');
+            div.className = 'skill-item';
+            div.innerHTML = `
+                <div class="skill-name">
+                    <span contenteditable="true">New Skill</span>
+                    <button class="del-btn" onclick="this.parentElement.parentElement.remove()">x</button>
+                </div>
+                <div class="skill-bar-bg">
+                    <div class="skill-bar-fill" style="width: 70%"></div>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function addListItem(listId) {
+            const list = document.getElementById(listId);
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span contenteditable="true">New Item</span>
+                <button class="del-btn" onclick="this.parentElement.remove()">x</button>
+            `;
+            list.appendChild(li);
+        }
+
+        function addExperience() {
+            const container = document.getElementById('expContainer');
+            const div = document.createElement('div');
+            div.className = 'timeline-item';
+            div.innerHTML = `
+                <div class="timeline-role" contenteditable="true">Job Title</div>
+                <div class="timeline-company" contenteditable="true">Company Name</div>
+                <div class="timeline-date" contenteditable="true">202X - Present</div>
+                <div class="timeline-desc" contenteditable="true">Description of your responsibilities and achievements.</div>
+                <button class="del-btn" onclick="this.parentElement.remove()" style="position: absolute; top: 0; right: 0;">Delete</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function addEducation() {
+            const container = document.getElementById('eduContainer');
+            const div = document.createElement('div');
+            div.className = 'timeline-item';
+            div.innerHTML = `
+                <div class="timeline-role" contenteditable="true">Degree Name</div>
+                <div class="timeline-company" contenteditable="true">University / School</div>
+                <div class="timeline-date" contenteditable="true">201X - 202X</div>
+                <div class="timeline-desc" contenteditable="true">Brief description or honors.</div>
+                <button class="del-btn" onclick="this.parentElement.remove()" style="position: absolute; top: 0; right: 0;">Delete</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function addContact() {
+            const container = document.querySelector('.header-right');
+            const div = document.createElement('div');
+            div.className = 'contact-item';
+            div.innerHTML = `
+                <span contenteditable="true">New Contact Info</span> <i class="fas fa-info-circle"></i>
+                <button class="del-btn" onclick="this.parentElement.remove()" style="position: absolute; right: 0; top: 0;">x</button>
+            `;
+            // Insert before the add button
+            container.insertBefore(div, container.lastElementChild);
+        }
+
+        function updateProfile(text) {
+            if (text) document.getElementById('profileText').innerText = text;
+        }
+
+        function toggleFresherMode() {
+            const isFresher = document.getElementById('fresherCheck').checked;
+            const expContainer = document.getElementById('expContainer');
+            const refresherSection = document.getElementById('fresherSection');
+            const addExpBtn = document.getElementById('addExpBtn');
+
+            if (isFresher) {
+                expContainer.style.display = 'none';
+                refresherSection.style.display = 'block';
+                addExpBtn.style.display = 'none';
+            } else {
+                expContainer.style.display = 'block';
+                refresherSection.style.display = 'none';
+                addExpBtn.style.display = 'inline-block';
+            }
+        }
+
+        function addPersonalDetail() {
+            const container = document.getElementById('personalContainer');
+            const div = document.createElement('div');
+            div.className = 'personal-item';
+            div.innerHTML = `
+                <span class="personal-label" contenteditable="true">Label</span>
+                <div class="personal-value" contenteditable="true">Value</div>
+                <button class="del-btn" onclick="this.parentElement.remove()" style="position: absolute; top: 5px; right: 5px;">x</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function addCustomSection() {
+            const mainContent = document.querySelector('.main-content');
+            const btn = document.querySelector('.btn-dashed'); // Insert before this button
+            const div = document.createElement('div');
+            div.className = 'timeline-section';
+            div.style.marginBottom = 'var(--section-gap)';
+            div.innerHTML = `
+                <div class="section-title" contenteditable="true"><i class="fas fa-star" style="margin-right: 10px;"></i> Custom Section</div>
+                <div class="timeline-desc" contenteditable="true">
+                    Enter details for this custom section (e.g., Projects, Certifications, Volunteering).
+                </div>
+                <button class="del-btn" onclick="this.parentElement.remove()" style="display:inline-block; margin-top:5px;">Delete Section</button>
+            `;
+            // Insert before the Custom Section button
+            mainContent.insertBefore(div, btn);
+        }
+    </script>
+<script src="template_switcher.js?v=data-sync-4"></script>
+</body>
+
+</html>

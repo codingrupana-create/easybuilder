@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AndroidResume</string>
+    <string name="title_activity_main">AndroidResume</string>
+    <string name="package_name">App.ResumeBuilder</string>
+    <string name="custom_url_scheme">App.ResumeBuilder</string>
+</resources>

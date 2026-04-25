@@ -1,0 +1,1101 @@
+<?php
+// Main PHP endpoint for the Resume Builder
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resume_content'])) {
+    $content = $_POST['resume_content'];
+    $computedStyles = $_POST['computed_styles'];
+
+    $filename = "resume_cards_" . date('Y-m-d_H-i') . ".html";
+    header('Content-Type: application/force-download');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+    echo "<!DOCTYPE html>
+    <html lang='en'>
+    <head>
+        <meta charset='UTF-8'>
+        <title>Creative Cards Resume</title>
+        <style>
+            :root { " . $computedStyles . " }
+            body { font-family: 'Poppins', sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
+            .resume-container { width: 21cm; margin: 0 auto; }
+            
+            /* RE-APPLY LAYOUT FOR PDF */
+            .resume-page { 
+                display: flex !important; 
+                flex-direction: row !important; 
+                width: 100%; 
+                min-height: 297mm; 
+                background-color: #f8f9fa !important;
+                padding: var(--content-padding) !important;
+            }
+            
+            .left-panel { 
+                width: var(--sidebar-width) !important; 
+                padding-right: 20px; 
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 20px !important;
+            }
+            
+            .right-panel { 
+                flex: 1 !important; 
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 20px !important;
+            }
+
+            /* CARD STYLES FOR PDF */
+            .section-card {
+                background: white !important;
+                border-radius: 12px !important;
+                padding: 20px !important;
+                box-shadow: none !important; /* Remove shadow for print crispness, or keep if desired */
+                border: 1px solid #eee !important;
+                margin-bottom: 20px !important;
+                break-inside: avoid !important;
+            }
+            
+            /* FORCE SIGNATURE TO RIGHT */
+            .footer-sign { display: flex !important; justify-content: space-between !important; margin-top: 10px; width: 100%; }
+            
+            /* GAP FIXES */
+            .entry, .info-item, #fresherSection p { margin-bottom: var(--item-gap); }
+            
+            /* TABLE FIX */
+            .edu-table td { padding-top: calc(var(--item-gap) * 0.5); padding-bottom: calc(var(--item-gap) * 0.5); }
+
+            /* PRINT LOGIC FOR INPUTS */
+            input[type='radio'] { display: none; }
+            .radio-group label { display: none; } 
+            .radio-group label.active-radio { display: inline; }
+            select { -webkit-appearance: none; appearance: none; border: none; background: transparent; padding: 0; margin: 0; color: inherit; }
+            
+            h1, h2, h3, h4, p, div { margin: 0; padding: 0; }
+            .skill-tag { border: 1px solid #ddd; background: #f0f0f0; color: #333; }
+            .edu-table { width: 100%; border-collapse: collapse; }
+            [contenteditable] { border: none !important; }
+            
+            .remove-btn, .remove-btn-skill, .remove-section-btn, .add-btn, .ui-controls, .editor-panel { display: none !important; }
+        </style>
+    </head>
+    <body>
+        " . $content . "
+        <script>
+             // window.onload = function() { window.print(); }
+        </script>
+    </body>
+    </html>";
+    exit;
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creative Cards Resume Builder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            /* Colors */
+            --primary-color: #ff6b6b;
+            --accent-color: #5f27cd;
+            --text-color: #333333;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+
+            /* Dimensions */
+            --page-width: 210mm;
+            --page-height: 297mm;
+
+            /* ADJUSTABLE DEFAULTS */
+            --base-font-size: 14px;
+            --section-gap: 20px;
+            --item-gap: 15px;
+            --content-padding: 30px;
+            --sidebar-width: 35%;
+            --line-height: 1.6;
+            --card-radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #555;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            padding: 20px;
+            font-size: var(--base-font-size);
+        }
+
+        /* --- RESUME PAGE --- */
+        .resume-page {
+            background: var(--bg-color);
+            /* Off-white background */
+            width: var(--page-width);
+            min-height: var(--page-height);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            display: flex;
+            flex-direction: row;
+            /* Side by side */
+            padding: var(--content-padding);
+            gap: 25px;
+            /* Gap between columns */
+            margin-right: 20px;
+            transition: all 0.2s ease;
+        }
+
+        /* --- CARD STYLE --- */
+        .section-card {
+            background: var(--card-bg);
+            border-radius: var(--card-radius);
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            margin-bottom: var(--section-gap);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .section-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.06);
+        }
+
+        /* --- LEFT PANEL (SIDEBAR) --- */
+        .left-panel {
+            width: var(--sidebar-width);
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            /* Handled by margins on cards */
+        }
+
+        h3 {
+            font-size: 1.1em;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        h3::before {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 8px;
+            background: var(--primary-color);
+            border-radius: 50%;
+        }
+
+        .info-item {
+            margin-bottom: var(--item-gap);
+            font-size: 0.9em;
+            position: relative;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #888;
+            display: block;
+            margin-bottom: 3px;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .left-panel select {
+            background: transparent;
+            border: none;
+            color: inherit;
+            width: 100%;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: inherit;
+            padding: 0;
+        }
+
+        .radio-group label {
+            margin-right: 10px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .skills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .skill-tag {
+            background-color: rgba(var(--primary-color), 0.1);
+            /* Fallback */
+            background: #f0f0f0;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            position: relative;
+            color: #444;
+            font-weight: 500;
+        }
+
+        /* --- RIGHT PANEL (CONTENT) --- */
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Card */
+        .header-card {
+            text-align: center;
+            border-bottom: 4px solid var(--primary-color);
+        }
+
+        h1.name {
+            font-size: 2.2em;
+            font-weight: 700;
+            color: var(--text-color);
+            line-height: 1.2;
+            margin-bottom: 5px;
+            letter-spacing: -0.5px;
+        }
+
+        .job-title {
+            font-size: 1.1em;
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .section-title {
+            font-size: 1.2em;
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px dashed #eee;
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Entries */
+        .entry {
+            margin-bottom: var(--item-gap);
+            position: relative;
+            padding-right: 20px;
+            border-left: 2px solid #eee;
+            padding-left: 15px;
+            margin-left: 5px;
+        }
+
+        .entry:last-child {
+            margin-bottom: 0;
+        }
+
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 4px;
+        }
+
+        .entry-title {
+            font-weight: 600;
+            font-size: 1.05em;
+            color: var(--text-color);
+        }
+
+        .entry-date {
+            font-size: 0.85em;
+            color: var(--accent-color);
+            font-weight: 500;
+            background: rgba(0, 0, 0, 0.04);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .entry-subtitle {
+            font-weight: 500;
+            color: #666;
+            font-size: 0.95em;
+            margin-bottom: 6px;
+        }
+
+        .entry-content {
+            font-size: 0.95em;
+            color: #555;
+            line-height: var(--line-height);
+        }
+
+        /* Tables */
+        .edu-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .edu-table td {
+            padding: 5px 0;
+            vertical-align: top;
+        }
+
+        .edu-table .entry-header {
+            margin-bottom: 0;
+        }
+
+        /* Footer */
+        .footer-sign {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            align-items: flex-end;
+            width: 100%;
+            opacity: 0.8;
+        }
+
+        .sign-line {
+            border-top: 1px solid #333;
+            width: 150px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+
+        /* --- BUTTON STYLES --- */
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-top: 8px;
+            width: 100%;
+            transition: all 0.2s;
+            display: block;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-blue {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .btn-blue:hover {
+            transform: translateY(-2px);
+            opacity: 0.95;
+        }
+
+        .btn-outline-blue {
+            border: 2px solid var(--accent-color);
+            background-color: transparent;
+            color: var(--accent-color);
+            box-shadow: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* --- UI CONTROLS --- */
+        .ui-controls,
+        .add-btn,
+        .remove-btn,
+        .remove-btn-skill,
+        .remove-section-btn {
+            display: none;
+        }
+
+        body.edit-mode .ui-controls {
+            display: block;
+            margin-top: 5px;
+        }
+
+        body.edit-mode .add-btn {
+            display: inline-block;
+            background: #eee;
+            color: #555;
+            border: none;
+            padding: 5px 12px;
+            font-size: 0.75rem;
+            margin-top: 8px;
+            cursor: pointer;
+            border-radius: 20px;
+            transition: all 0.2s;
+        }
+
+        body.edit-mode .add-btn:hover {
+            background: #ddd;
+            color: #000;
+        }
+
+        .remove-btn,
+        .remove-btn-skill {
+            position: absolute;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .remove-btn {
+            top: -5px;
+            right: -5px;
+            width: 22px;
+            height: 22px;
+            font-size: 12px;
+        }
+
+        .remove-btn-skill {
+            top: -5px;
+            right: -5px;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+        }
+
+        .remove-section-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            font-size: 0.7rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        body.edit-mode .section-card:hover .remove-section-btn {
+            display: block;
+        }
+
+        /* Edit Mode Hovers */
+        body.edit-mode .entry:hover .remove-btn,
+        body.edit-mode .info-item:hover .remove-btn-skill,
+        body.edit-mode .skill-tag:hover .remove-btn-skill,
+        body.edit-mode tr:hover .remove-btn {
+            display: flex;
+        }
+
+        [contenteditable="true"] {
+            border: 1px solid transparent;
+            min-width: 10px;
+            transition: all 0.2s;
+        }
+
+        body.edit-mode [contenteditable="true"]:hover {
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 4px;
+        }
+
+        body.edit-mode [contenteditable="true"]:focus {
+            outline: 2px solid var(--accent-color);
+            background-color: white;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .objective-controls select {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        /* --- EDITOR PANEL --- */
+        .editor-panel {
+            width: 260px;
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            height: fit-content;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: fixed;
+            right: 30px;
+            top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            z-index: 1000;
+        }
+
+        .editor-panel h3 {
+            color: #333;
+            border-bottom: none;
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        .editor-panel h3::before {
+            display: none;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .control-group input[type="color"] {
+            width: 100%;
+            height: 35px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        /* --- PRINT SETTINGS --- */
+        @media print {
+            @page {
+                margin: 0;
+                size: A4;
+            }
+
+            html,
+            body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+                overflow: hidden !important;
+                /* Key fix */
+                background-color: white;
+            }
+
+            .editor-panel {
+                display: none !important;
+            }
+
+            .resume-page {
+                margin: 0 !important;
+                box-shadow: none !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                /* Strict height */
+                max-height: 297mm !important;
+                padding: var(--content-padding) !important;
+                background-color: #f8f9fa !important;
+                display: flex !important;
+                flex-direction: row !important;
+                overflow: hidden !important;
+                position: relative;
+            }
+
+            .section-card {
+                background: white !important;
+                border: 1px solid #ddd !important;
+                break-inside: avoid;
+                box-shadow: none !important;
+            }
+
+            .left-panel {
+                height: 100% !important;
+                min-height: 0 !important;
+                /* Prevent expansion */
+            }
+
+            /* Hide Logic for Form Elements */
+            input[type='radio'],
+            .radio-group label,
+            .add-btn,
+            .remove-btn {
+                display: none;
+            }
+
+            .radio-group label.active-radio {
+                display: inline;
+            }
+
+            /* Hide Scrollbar for print */
+            ::-webkit-scrollbar {
+                display: none;
+            }
+        }
+
+        @media screen and (max-width: 1100px) {
+            body {
+                flex-direction: column-reverse;
+            }
+
+            .editor-panel {
+                width: 100%;
+                position: static;
+                margin-bottom: 20px;
+            }
+
+            .resume-page {
+                margin-right: 0;
+                flex-direction: column;
+                transform: scale(0.9);
+                transform-origin: top center;
+                gap: 0;
+            }
+
+            .left-panel,
+            .right-panel {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body class="edit-mode">
+
+    <div class="resume-page" id="resumeArea">
+
+        <div class="left-panel">
+
+            <div class="section-card">
+                <h3>Contact</h3>
+                <div id="contactList">
+                    <div class="info-item">
+                        <span class="info-label" contenteditable="true">Phone</span>
+                        <div contenteditable="true">+1 (555) 123-4567</div>
+                        <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label" contenteditable="true">Email</span>
+                        <div contenteditable="true">email@example.com</div>
+                        <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label" contenteditable="true">Address</span>
+                        <div contenteditable="true">San Francisco, CA</div>
+                        <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label" contenteditable="true">LinkedIn</span>
+                        <div contenteditable="true">linkedin.com/in/jdoe</div>
+                        <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                    </div>
+                </div>
+                <button class="add-btn" onclick="addContact()">+ Add Contact</button>
+            </div>
+
+            <div class="section-card">
+                <h3>Personal Info</h3>
+                <div id="personalInfoList">
+                     <div class="info-item">
+                        <span class="info-label" contenteditable="true">Father's Name</span>
+                        <div contenteditable="true">Mr. Robert Doe</div>
+                        <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label" contenteditable="true">Date of Birth</span>
+                        <div contenteditable="true">01 Jan 1990</div>
+                        <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label" contenteditable="true">Gender</span>
+                        <select>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label" contenteditable="true">Marital Status</span>
+                         <select>
+                            <option value="Unmarried">Unmarried</option>
+                            <option value="Married">Married</option>
+                            <option value="Divorced">Divorced</option>
+                        </select>
+                        <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label" contenteditable="true">Nationality</span>
+                        <div contenteditable="true">American</div>
+                        <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label" contenteditable="true">Languages</span>
+                        <div contenteditable="true">English (Native), Spanish (B2)</div>
+                        <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                    </div>
+                     <div class="info-item">
+                        <span class="info-label" contenteditable="true">Portfolio</span>
+                        <div contenteditable="true">behance.net/johndoe</div>
+                        <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                    </div>
+                </div>
+                <button class="add-btn" onclick="addPersonalDetail()">+ Add Detail</button>
+            </div>
+
+            <div class="section-card">
+                <h3>Skills</h3>
+                <div class="skills-container" id="skillsList">
+                    <div class="skill-tag"><span contenteditable="true">UI Design</span><button class="remove-btn-skill"
+                            onclick="removeElement(this.parentElement)">x</button></div>
+                    <div class="skill-tag"><span contenteditable="true">Figma</span><button class="remove-btn-skill"
+                            onclick="removeElement(this.parentElement)">x</button></div>
+                    <div class="skill-tag"><span contenteditable="true">CSS Grid</span><button class="remove-btn-skill"
+                            onclick="removeElement(this.parentElement)">x</button></div>
+                    <div class="skill-tag"><span contenteditable="true">React</span><button class="remove-btn-skill"
+                            onclick="removeElement(this.parentElement)">x</button></div>
+                </div>
+                <button class="add-btn" onclick="addSkill()">+ Add Skill</button>
+            </div>
+
+            <div class="section-card">
+                <h3>Hobbies</h3>
+                <div class="skills-container" id="hobbiesList">
+                    <div class="skill-tag"><span contenteditable="true">Photography</span><button
+                            class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button></div>
+                    <div class="skill-tag"><span contenteditable="true">Hiking</span><button class="remove-btn-skill"
+                            onclick="removeElement(this.parentElement)">x</button></div>
+                </div>
+                <button class="add-btn" onclick="addHobby()">+ Add Hobby</button>
+            </div>
+
+        </div>
+
+        <div class="right-panel">
+
+            <div class="section-card header-card">
+                <header>
+                    <h1 class="name" contenteditable="true">JOHN DOE</h1>
+                    <div class="job-title" contenteditable="true">CREATIVE DESIGNER</div>
+                </header>
+
+                <div class="section-title"
+                    style="margin-top: 20px; justify-content: center; border: none; color: #666; font-size: 1rem;">
+                    Profile</div>
+                <div id="objectiveText" contenteditable="true" style="color: #555; font-style: italic;">
+                    Passionate creative designer with a knack for modern aesthetics and functional composition.
+                    Dedicated to creating impactful visual experiences.
+                </div>
+                <div class="objective-controls ui-controls">
+                    <select
+                        onchange="if(this.value) { document.getElementById('objectiveText').innerText = this.value; this.selectedIndex = 0; }">
+                        <option value="">-- Quick Profile Text --</option>
+                        <option value="Passionate creative designer with a knack for modern aesthetics...">Creative
+                        </option>
+                        <option value="To obtain a challenging role that allows me to enhance my skills...">General
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-title">
+                    Experience
+                    <div class="ui-controls" id="fresherControl" style="font-size:0.7rem; font-weight: normal;">
+                        <label><input type="checkbox" id="fresherCheck" onchange="toggleFresherMode()"> I am a
+                            Fresher</label>
+                    </div>
+                </div>
+                <div id="experienceSection">
+                    <div class="entry">
+                        <div class="entry-header">
+                            <div class="entry-title" contenteditable="true">Senior Designer</div>
+                            <div class="entry-date" contenteditable="true">2021 - Present</div>
+                        </div>
+                        <div class="entry-subtitle" contenteditable="true">Creative Agency NYC</div>
+                        <div class="entry-content" contenteditable="true">
+                            • Led the rebranding of 5 major accounts.<br>
+                            • Mentored junior design team in best practices.
+                        </div>
+                        <button class="remove-btn" onclick="removeElement(this.parentElement)">X</button>
+                    </div>
+                    <div class="entry">
+                        <div class="entry-header">
+                            <div class="entry-title" contenteditable="true">Graphic Designer</div>
+                            <div class="entry-date" contenteditable="true">2018 - 2021</div>
+                        </div>
+                        <div class="entry-subtitle" contenteditable="true">Studio Spark</div>
+                        <div class="entry-content" contenteditable="true">
+                            • Designed marketing collateral for print and digital.<br>
+                            • Collaborated with UX team on wireframes.
+                        </div>
+                        <button class="remove-btn" onclick="removeElement(this.parentElement)">X</button>
+                    </div>
+                </div>
+                <div id="fresherSection"
+                    style="display:none; font-style:italic; color:#777; margin-bottom:15px; text-align: center;">
+                    <p>Fresher - Seeking entry level opportunities.</p>
+                </div>
+                <button class="add-btn" id="addExpBtn" onclick="addExperience()">+ Add Position</button>
+            </div>
+
+            <div class="section-card">
+                <div class="section-title">Education</div>
+                <div id="educationSection">
+                    <div class="entry">
+                        <div class="entry-header">
+                            <div class="entry-title" contenteditable="true">B.A. Graphic Design</div>
+                            <div class="entry-date" contenteditable="true">2014 - 2018</div>
+                        </div>
+                        <div class="entry-subtitle" contenteditable="true">Art Institute</div>
+                        <div class="entry-content" contenteditable="true">Graduated with Honors (3.8 GPA)</div>
+                        <button class="remove-btn" onclick="removeElement(this.parentElement)">X</button>
+                    </div>
+                </div>
+                <button class="add-btn" onclick="addEducation()">+ Add Education</button>
+            </div>
+
+            <div id="customSectionsContainer"></div>
+            <button class="add-btn"
+                style="width: 100%; margin-bottom: 20px; background: transparent; border: 1px dashed #aaa;"
+                onclick="addCustomSection()">+ Add Custom Section</button>
+
+            <div class="section-card">
+                <div class="section-title" style="border: none; margin-bottom: 5px;">Declaration</div>
+                <div class="declaration-text" contenteditable="true" style="font-size: 0.85em; color: #777;">
+                    I hereby declare that the above-mentioned information is correct to the best of my knowledge.
+                </div>
+                <div class="footer-sign">
+                    <div class="sign-box">
+                        <div contenteditable="true">Date:
+                            <?php echo date("d/m/Y"); ?>
+                        </div>
+                    </div>
+                    <div class="sign-box">
+                        <div class="sign-line" contenteditable="true">Signature</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="editor-panel">
+        <h3>Creative Controls</h3>
+
+        <div class="control-group">
+            <label>Primary Color (Headers)</label>
+            <input type="color" value="#ff6b6b" oninput="updateVar('--primary-color', this.value)">
+        </div>
+
+        <div class="control-group">
+            <label>Accent Color (Tags/Icons)</label>
+            <input type="color" value="#5f27cd" oninput="updateVar('--accent-color', this.value)">
+        </div>
+
+        <div class="control-group">
+            <label>Text Color</label>
+            <input type="color" value="#333333" oninput="updateVar('--text-color', this.value)">
+        </div>
+
+        <div class="control-group">
+            <label>View Mode</label>
+            <button class="btn btn-outline-blue" onclick="toggleEditMode()" id="editToggleBtn">Lock / Preview</button>
+        </div>
+
+        <div class="control-group">
+            <label>Font Size</label>
+            <input type="range" min="12" max="18" value="14" oninput="updateVar('--base-font-size', this.value + 'px')">
+        </div>
+
+        <div class="control-group">
+            <label>Card Roundness</label>
+            <input type="range" min="0" max="25" value="12" oninput="updateVar('--card-radius', this.value + 'px')">
+        </div>
+
+        <div class="control-group">
+            <label>Sidebar Width</label>
+            <input type="range" min="25" max="45" value="35" oninput="updateVar('--sidebar-width', this.value + '%')">
+        </div>
+
+        <div class="control-group">
+            <label>Content Padding</label>
+            <input type="range" min="20" max="60" value="30"
+                oninput="updateVar('--content-padding', this.value + 'px')">
+        </div>
+
+        <div class="control-group">
+            <label>Item Gap</label>
+            <input type="range" min="5" max="30" value="15" oninput="updateVar('--item-gap', this.value + 'px')">
+        </div>
+
+        <div class="control-group">
+            <label>Vertical Gap</label>
+            <input type="range" min="10" max="50" value="20" oninput="updateVar('--section-gap', this.value + 'px')">
+        </div>
+
+        <div style="margin-top:auto;">
+            <form action="" method="POST" target="_blank" onsubmit="return false">
+                <input type="hidden" name="resume_content" id="resumeContentInput">
+                <input type="hidden" name="computed_styles" id="computedStylesInput">
+                <button type="button" data-pdf-download="true" onclick="downloadResumePDF(event)" class="btn btn-primary">Save / Download</button>
+            </form>
+            <button class="btn btn-blue" onclick="window.print()">Print PDF</button>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function () {
+            const expSection = document.getElementById('experienceSection');
+            if (expSection && expSection.children.length > 0) {
+                document.getElementById('fresherControl').style.display = 'none';
+            }
+        };
+
+        function updateVar(variable, value) {
+            document.documentElement.style.setProperty(variable, value);
+        }
+
+        function toggleEditMode() {
+            document.body.classList.toggle('edit-mode');
+            const btn = document.getElementById('editToggleBtn');
+            if (document.body.classList.contains('edit-mode')) {
+                btn.textContent = "Lock / Preview";
+                btn.classList.add('btn-outline-blue');
+                btn.classList.remove('btn-blue');
+            } else {
+                btn.textContent = "Back to Edit Mode";
+                btn.classList.remove('btn-outline-blue');
+                btn.classList.add('btn-blue');
+            }
+        }
+
+        function removeElement(el) {
+            if (confirm('Delete this item?')) {
+                el.remove();
+                const expSection = document.getElementById('experienceSection');
+                if (expSection && expSection.children.length === 0) {
+                    const fresherControl = document.getElementById('fresherControl');
+                    if (fresherControl) fresherControl.style.display = 'block';
+                }
+            }
+        }
+
+        function toggleFresherMode() {
+            const isFresher = document.getElementById('fresherCheck').checked;
+            const expSection = document.getElementById('experienceSection');
+            const fresherMsg = document.getElementById('fresherSection');
+            const addExpBtn = document.getElementById('addExpBtn');
+            if (isFresher) {
+                expSection.style.display = 'none'; addExpBtn.style.display = 'none'; fresherMsg.style.display = 'block';
+            } else {
+                expSection.style.display = 'block'; addExpBtn.style.display = ''; fresherMsg.style.display = 'none';
+            }
+        }
+
+        function addExperience() {
+            const container = document.getElementById('experienceSection');
+            const newBlock = document.createElement('div');
+            newBlock.className = 'entry';
+            newBlock.innerHTML = `
+                <div class="entry-header"><div class="entry-title" contenteditable="true">Job Title</div><div class="entry-date" contenteditable="true">Year - Year</div></div>
+                <div class="entry-subtitle" contenteditable="true">Company Name</div>
+                <div class="entry-content" contenteditable="true">Description...</div>
+                <button class="remove-btn" onclick="removeElement(this.parentElement)">X</button>`;
+            container.appendChild(newBlock);
+            document.getElementById('fresherControl').style.display = 'none';
+        }
+
+        function addEducation() {
+            const container = document.getElementById('educationSection');
+            const newBlock = document.createElement('div');
+            newBlock.className = 'entry';
+            newBlock.innerHTML = `
+                <div class="entry-header"><div class="entry-title" contenteditable="true">Degree</div><div class="entry-date" contenteditable="true">Year</div></div>
+                <div class="entry-subtitle" contenteditable="true">University</div>
+                <div class="entry-content" contenteditable="true">Grade/CGPA</div>
+                <button class="remove-btn" onclick="removeElement(this.parentElement)">X</button>`;
+            container.appendChild(newBlock);
+        }
+
+        function addContact() {
+            const container = document.getElementById('contactList');
+            const newDiv = document.createElement('div');
+            newDiv.className = 'info-item';
+            newDiv.innerHTML = `<span class="info-label" contenteditable="true">New Label</span><div contenteditable="true">Value</div><button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>`;
+            container.appendChild(newDiv);
+        }
+
+        function addPersonalDetail() {
+            const container = document.getElementById('personalInfoList');
+            const newDiv = document.createElement('div');
+            newDiv.className = 'info-item';
+            newDiv.innerHTML = `<span class="info-label" contenteditable="true">Label</span><div contenteditable="true">Value</div><button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>`;
+            container.appendChild(newDiv);
+        }
+
+        function addSkill() {
+            const container = document.getElementById('skillsList');
+            const newTag = document.createElement('div');
+            newTag.className = 'skill-tag';
+            newTag.innerHTML = `<span contenteditable="true">New Skill</span><button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>`;
+            container.appendChild(newTag);
+        }
+
+        function addHobby() {
+            const container = document.getElementById('hobbiesList');
+            const newTag = document.createElement('div');
+            newTag.className = 'skill-tag';
+            newTag.innerHTML = `<span contenteditable="true">New Hobby</span><button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>`;
+            container.appendChild(newTag);
+        }
+
+        function addCustomSection() {
+            const container = document.getElementById('customSectionsContainer');
+            const newSection = document.createElement('div');
+            newSection.className = 'section-card';
+            newSection.innerHTML = `
+                <div class="section-title">
+                    <span contenteditable="true">New Section</span>
+                    <button class="remove-section-btn" onclick="removeElement(this.parentElement.parentElement)" style="display:block;">Remove</button>
+                </div>
+                <div class="entry">
+                    <div class="entry-content" contenteditable="true">Add content here...</div>
+                </div>
+            `;
+            container.appendChild(newSection);
+        }
+
+        function prepareSave() {
+            const body = document.body;
+            const wasEditing = body.classList.contains('edit-mode');
+            if (wasEditing) body.classList.remove('edit-mode');
+
+            const style = getComputedStyle(document.documentElement);
+            let cssVars = "";
+            ['--base-font-size', '--section-gap', '--content-padding', '--item-gap', '--sidebar-width', '--line-height', '--primary-color', '--bg-color', '--text-color', '--accent-color', '--card-radius'].forEach(v => {
+                cssVars += `${v}: ${style.getPropertyValue(v)}; `;
+            });
+
+            document.getElementById('computedStylesInput').value = cssVars;
+            document.getElementById('resumeContentInput').value = document.getElementById('resumeArea').innerHTML;
+            if (wasEditing) body.classList.add('edit-mode');
+        }
+    </script>
+<script src="template_switcher.js?v=data-sync-4"></script>
+</body>
+
+</html>

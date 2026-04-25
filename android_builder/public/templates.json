@@ -1,0 +1,92 @@
+[
+    {
+        "file": "bold_creative.html",
+        "name": "Bold Creative",
+        "icon": "\u2728"
+    },
+    {
+        "file": "classic_professional.html",
+        "name": "Classic Professional",
+        "icon": "\ud83d\udc54"
+    },
+    {
+        "file": "creative6.html",
+        "name": "Creative",
+        "icon": "\ud83c\udfa8"
+    },
+    {
+        "file": "creative_cards.html",
+        "name": "Creative Cards",
+        "icon": "\ud83c\udccf"
+    },
+    {
+        "file": "elegant.html",
+        "name": "Elegant",
+        "icon": "\ud83c\udf77"
+    },
+    {
+        "file": "elegant_dark.html",
+        "name": "Elegant Dark",
+        "icon": "\ud83c\udf19"
+    },
+    {
+        "file": "executive3.html",
+        "name": "Executive",
+        "icon": "\ud83d\udd74\ufe0f"
+    },
+    {
+        "file": "gurp.html",
+        "name": "Gurp",
+        "icon": "\ud83d\udcc4"
+    },
+    {
+        "file": "impact2.html",
+        "name": "Impact",
+        "icon": "\ud83d\udca5"
+    },
+    {
+        "file": "infographic_style.html",
+        "name": "Infographic Style",
+        "icon": "\ud83d\udcca"
+    },
+    {
+        "file": "modern2.html",
+        "name": "Modern",
+        "icon": "\ud83d\udfe6"
+    },
+    {
+        "file": "modern2withcolor.html",
+        "name": "Modern Color",
+        "icon": "\ud83c\udfa8"
+    },
+    {
+        "file": "modern_minimal.html",
+        "name": "Modern Minimal",
+        "icon": "\ud83d\udd8a\ufe0f"
+    },
+    {
+        "file": "professional4.html",
+        "name": "Professional",
+        "icon": "\ud83d\udcbc"
+    },
+    {
+        "file": "simple4.html",
+        "name": "Simple",
+        "icon": "\ud83d\udcc4"
+    },
+    {
+        "file": "simpletwo.html",
+        "name": "Simpletwo",
+        "icon": "\ud83d\udcc4"
+    },
+    {
+        "file": "structural_modern.html",
+        "name": "Structural Modern",
+        "icon": "\ud83c\udfdb\ufe0f"
+    },
+    {
+        "file": "timeline_modern.html",
+        "name": "Timeline Modern",
+        "icon": "\u23f1\ufe0f"
+    }
+]

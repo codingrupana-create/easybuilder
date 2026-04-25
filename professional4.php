@@ -1,0 +1,729 @@
+<?php
+// Main PHP endpoint for the Resume Builder
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resume_content'])) {
+    $content = $_POST['resume_content'];
+    $computedStyles = $_POST['computed_styles'];
+
+    $filename = "resume_" . date('Y-m-d_H-i') . ".html";
+    header('Content-Type: application/force-download');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    
+    echo "<!DOCTYPE html>
+    <html lang='en'>
+    <head>
+        <meta charset='UTF-8'>
+        <title>Saved Resume</title>
+        <style>
+            :root { " . $computedStyles . " }
+            body { font-family: 'Open Sans', sans-serif; margin: 0; padding: 0; }
+            .resume-container { width: 21cm; margin: 0 auto; }
+            
+            /* RE-APPLY LAYOUT FOR PDF */
+            .resume-page {
+                /* FORCE BACKGROUND GRADIENT FOR PRINT TO SIMULATE SIDEBAR STRETCH */
+                background: linear-gradient(to right, var(--sidebar-bg) var(--sidebar-width), white var(--sidebar-width)) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                min-height: 297mm; /* Force A4 Height */
+                width: 210mm;
+                overflow: hidden; /* Prevents tiny overflows creating a blank 2nd page */
+            }
+
+            .resume-body { display: flex !important; flex-direction: row !important; width: 100%; }
+            
+            .left-sidebar { 
+                width: var(--sidebar-width) !important; 
+                flex-shrink: 0 !important; /* PREVENT SQUISHING */
+                padding: 30px 20px; 
+                background: transparent !important; 
+            }
+            .main-content { 
+                flex: 1 !important; 
+                padding: 30px var(--content-padding); 
+                background-color: transparent !important; 
+            }
+            .header-section { 
+                background-color: #1e2a36 !important; 
+                color: white !important; 
+                -webkit-print-color-adjust: exact; 
+                padding: 30px var(--content-padding);
+            }
+            
+            /* FORCE SIGNATURE TO RIGHT */
+            .footer-sign { display: flex !important; justify-content: space-between !important; margin-top: 30px; width: 100%; }
+            
+            /* GAP FIXES - APPLIED GLOBALLY */
+            .section { margin-bottom: var(--section-gap) !important; }
+            .entry, .sidebar-item, .profile-text, #fresherSection { margin-bottom: var(--item-gap) !important; }
+            
+            /* TABLE FIX */
+            .edu-table td { padding-top: calc(var(--item-gap) * 0.5); padding-bottom: calc(var(--item-gap) * 0.5); }
+
+            h1, h2, h3, h4, p, div { margin: 0; padding: 0; }
+            .edu-table { width: 100%; border-collapse: collapse; }
+            .edu-table th { padding: 8px; text-align: left; background-color: #eee !important; -webkit-print-color-adjust: exact; }
+            [contenteditable] { border: none !important; }
+            
+            /* HIDE BUTTONS IN SAVED HTML */
+            .add-btn, .remove-btn, .remove-btn-skill, .ui-controls, .btn-dashed, .remove-section-btn { display: none !important; }
+        </style>
+    </head>
+    <body>
+        " . $content . "
+    </body>
+    </html>";
+    exit;
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Resume Builder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;700;900&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* CSS VARIABLES */
+        :root {
+            /* Colors */
+            --header-bg: #1e2a36;       /* Deep Navy */
+            --header-text: #ffffff;
+            --accent-color: #c0a375;    /* Muted Gold */
+            --text-main: #2c3e50;
+            --sidebar-bg: #f4f6f8;
+            
+            /* Dimensions */
+            --page-width: 210mm;
+            --page-height: 297mm;
+            
+            /* ADJUSTABLE DEFAULTS */
+            --base-font-size: 14px;
+            --section-gap: 25px;
+            --item-gap: 15px;
+            --content-padding: 40px;
+            --sidebar-width: 30%;
+            --line-height: 1.5;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #555;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            padding: 20px;
+            font-size: var(--base-font-size);
+        }
+
+        /* --- RESUME PAGE --- */
+        .resume-page {
+            background: white;
+            /* CRITICAL: Gradient mimics sidebar color for full page height */
+            background: linear-gradient(to right, var(--sidebar-bg) var(--sidebar-width), white var(--sidebar-width));
+            width: var(--page-width);
+            min-height: var(--page-height); /* Ensures it fills A4 paper */
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            margin-right: 20px;
+            transition: all 0.2s ease;
+        }
+
+        /* --- HEADER --- */
+        .header-section {
+            background-color: var(--header-bg);
+            color: var(--header-text);
+            padding: 30px var(--content-padding);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 5px solid var(--accent-color);
+            position: relative;
+            z-index: 2; 
+        }
+
+        .header-content h1.name {
+            font-family: 'Merriweather', serif; font-size: 2.8em; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;
+        }
+        .header-content .job-title {
+            font-family: 'Open Sans', sans-serif; font-size: 1.1em; text-transform: uppercase; letter-spacing: 2px; color: var(--accent-color);
+        }
+        .header-contact { text-align: right; font-size: 0.9em; line-height: 1.6; color: #dcdcdc; }
+
+        /* --- MAIN BODY (SPLIT) --- */
+        .resume-body {
+            display: flex;
+            flex: 1; 
+        }
+
+        /* LEFT SIDEBAR */
+        .left-sidebar {
+            width: var(--sidebar-width);
+            flex-shrink: 0; /* CRITICAL FIX: Prevents sidebar from shrinking if content is wide */
+            padding: 30px 20px;
+            border-right: 1px solid rgba(0,0,0,0.05);
+            display: flex; flex-direction: column;
+        }
+
+        /* RIGHT CONTENT */
+        .main-content {
+            flex: 1;
+            padding: 30px var(--content-padding);
+            display: flex; flex-direction: column;
+        }
+
+        /* --- GAPS & SECTIONS --- */
+        .section {
+            margin-bottom: var(--section-gap) !important;
+            position: relative;
+        }
+
+        .section-title {
+            font-family: 'Merriweather', serif; font-size: 1.1em; color: var(--header-bg); text-transform: uppercase;
+            border-bottom: 1px solid #ccc; padding-bottom: 5px; 
+            margin-bottom: 15px; 
+            font-weight: 700; display: flex; justify-content: space-between; align-items: center; 
+        }
+
+        .entry, 
+        .sidebar-item,
+        .profile-text { 
+            margin-bottom: var(--item-gap) !important; 
+            position: relative; 
+        }
+
+        /* Specific Styling */
+        .sidebar-item { font-size: 0.9em; }
+        .sidebar-label { font-weight: 700; color: var(--header-bg); display: block; margin-bottom: 3px; font-size: 0.85em;}
+
+        .skill-tag {
+            display: inline-block; background: #fff; border: 1px solid #ccc; padding: 3px 8px; margin-bottom: 5px; font-size: 0.8em; border-radius: 3px; position: relative;
+        }
+
+        .entry-header { display: flex; justify-content: space-between; font-weight: 700; color: #333; font-size: 1em; }
+        .entry-subtitle { color: var(--header-bg); font-weight: 600; font-size: 0.9em; margin-bottom: 5px; font-style: italic; }
+        .entry-content { font-size: 0.95em; line-height: var(--line-height); color: #444; }
+        
+        .profile-text {
+            line-height: var(--line-height); 
+            color: #444;
+        }
+
+        /* Tables */
+        .edu-table { width: 100%; border-collapse: collapse; font-size: 0.9em; margin-bottom: 15px; }
+        .edu-table th { 
+            text-align: left; background-color: #eee; padding: 8px; 
+            border-bottom: 2px solid var(--header-bg); font-family: 'Merriweather', serif; font-weight: bold; color: var(--header-bg); font-size: 0.85em; 
+        }
+        .edu-table td { 
+            padding-top: calc(var(--item-gap) * 0.5); 
+            padding-bottom: calc(var(--item-gap) * 0.5);
+            padding-left: 8px; padding-right: 8px;
+            border-bottom: 1px solid #eee; vertical-align: top; position: relative; 
+        }
+        .edu-table tr:last-child td { border-bottom: none; }
+
+        /* Footer */
+        .footer-sign { display: flex; justify-content: space-between; margin-top: 40px; align-items: flex-end; padding-top: 20px; border-top: 2px solid #eee; }
+        .sign-line { border-top: 1px solid #333; width: 180px; margin-top: 30px; text-align: center; font-weight: bold; }
+
+        /* --- BUTTON STYLES --- */
+        .btn {
+            padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem;
+            margin-top: 8px; width: 100%; transition: all 0.2s; display: block; text-align: center;
+        }
+        .btn-blue { background-color: #3498db; color: white; }
+        .btn-blue:hover { background-color: #2980b9; }
+        .btn-outline-blue { border: 2px solid #3498db; background-color: transparent; color: #3498db; }
+        .btn-outline-blue:hover { background-color: #3498db; color: white; }
+        .btn-primary { background-color: var(--header-bg); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        
+        /* Dashed Button for adding Sections - HIDDEN BY DEFAULT */
+        .btn-dashed {
+            background: transparent; border: 2px dashed #999; color: #666; font-size: 0.9rem; margin-top: 20px;
+            display: none; 
+        }
+        .btn-dashed:hover { border-color: var(--header-bg); color: var(--header-bg); }
+
+        /* --- UI CONTROLS --- */
+        .ui-controls, .add-btn, .remove-btn, .remove-btn-skill, .remove-section-btn { display: none; }
+        
+        /* Show controls ONLY in edit mode */
+        body.edit-mode .ui-controls { display: block; margin-bottom: 10px;}
+        body.edit-mode .add-btn { display: inline-block; background: var(--header-bg); color: white; border: none; padding: 5px 10px; font-size: 0.7rem; margin-top:5px; cursor: pointer; }
+        body.edit-mode .btn-dashed { display: block; } /* Show dashed buttons in edit mode */
+
+        .remove-btn, .remove-btn-skill {
+            position: absolute; background: #e74c3c; color: white; border: none; border-radius: 50%; cursor: pointer; 
+            display: none; align-items: center; justify-content: center; z-index: 100; font-weight: bold;
+        }
+        .remove-btn { top: 0; right: 0; width: 20px; height: 20px; font-size: 10px; }
+        .remove-btn-skill { top: -5px; right: -5px; width: 14px; height: 14px; font-size: 9px; }
+        
+        /* Section Remove Button */
+        .remove-section-btn {
+            background: #e74c3c; color: white; border: none; padding: 2px 8px; font-size: 0.7rem; border-radius: 4px; cursor: pointer;
+        }
+        body.edit-mode .section:hover .section-title .remove-section-btn { display: block; }
+
+        body.edit-mode .entry:hover .remove-btn, 
+        body.edit-mode .sidebar-item:hover .remove-btn-skill,
+        body.edit-mode .skill-tag:hover .remove-btn-skill,
+        body.edit-mode tr:hover .remove-btn { display: flex; }
+
+        /* Edit Mode Styles */
+        [contenteditable="true"] { border: 1px solid transparent; padding: 1px; min-width: 10px; transition: border-color 0.2s; }
+        body.edit-mode [contenteditable="true"] { border-bottom: 1px dashed #bbb; background-color: rgba(255, 255, 255, 0.2); }
+        body.edit-mode [contenteditable="true"]:focus { outline: 2px solid var(--accent-color); background-color: #fff; color: #000 !important; }
+        
+        .objective-controls select { width: 100%; padding: 5px; margin-bottom: 5px; }
+
+        /* --- EDITOR PANEL --- */
+        .editor-panel {
+            width: 250px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            height: fit-content; position: fixed; right: 30px; top: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 1000;
+        }
+        .editor-panel h3 { color: var(--header-bg); border-bottom: 2px solid var(--accent-color); padding-bottom: 10px; margin-bottom: 5px; }
+        .control-group label { display: block; font-size: 0.85rem; font-weight: bold; color: #555; margin-bottom: 5px; }
+        .control-group input[type="range"] { width: 100%; cursor: pointer; }
+
+        /* --- PRINT SETTINGS --- */
+        @media print {
+            @page { size: A4; margin: 0; }
+            body { background: white; padding: 0; display: block; -webkit-print-color-adjust: exact; margin: 0; }
+            .editor-panel { display: none !important; }
+            
+            .resume-page { margin: 0; box-shadow: none; width: 210mm; min-height: 297mm; padding: 0 !important; overflow: hidden; }
+            
+            /* Print gradient background for sidebar illusion */
+            .resume-page {
+                background: linear-gradient(to right, var(--sidebar-bg) var(--sidebar-width), white var(--sidebar-width)) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .header-section { padding-left: var(--content-padding) !important; padding-right: var(--content-padding) !important; }
+            .left-sidebar { width: var(--sidebar-width) !important; padding: 30px 20px !important; min-height: 100% !important; }
+            .main-content { padding: 30px var(--content-padding) !important; width: auto !important; }
+
+            .footer-sign { display: flex !important; flex-direction: row !important; justify-content: space-between !important; width: 100% !important; }
+            
+            .entry, .sidebar-item, .profile-text { margin-bottom: var(--item-gap) !important; }
+            .section { margin-bottom: var(--section-gap) !important; }
+            .edu-table td { padding-top: calc(var(--item-gap) * 0.5) !important; padding-bottom: calc(var(--item-gap) * 0.5) !important; }
+            
+            .entry, .section { break-inside: avoid; }
+            [contenteditable="true"] { border: none !important; padding: 0 !important; }
+        }
+        
+        @media screen and (max-width: 1100px) {
+            body { flex-direction: column-reverse; }
+            .editor-panel { width: 100%; position: static; margin-bottom: 20px; }
+            .resume-page { margin-right: 0; flex-direction: column; transform: scale(0.9); transform-origin: top center; background: white !important;} 
+            /* On small screen, remove gradient and just stack */
+            .left-sidebar, .main-content { width: 100%; background: var(--sidebar-bg) !important; }
+            .main-content { background: white !important; }
+        }
+    </style>
+</head>
+
+<body class="edit-mode">
+
+    <div class="resume-page" id="resumeArea">
+
+        <header class="header-section">
+            <div class="header-content">
+                <h1 class="name" contenteditable="true">ALEXANDER SMITH</h1>
+                <div class="job-title" contenteditable="true">SENIOR SOFTWARE ENGINEER</div>
+            </div>
+            <div class="header-contact">
+                <div contenteditable="true">+1 (555) 123-4567</div>
+                <div contenteditable="true">alex.smith@email.com</div>
+                <div contenteditable="true">New York, NY</div>
+                <div contenteditable="true">linkedin.com/in/alexsmith</div>
+            </div>
+        </header>
+
+        <div class="resume-body">
+            
+            <aside class="left-sidebar" id="sidebarArea">
+                
+                <div class="section">
+                    <div class="section-title">Personal Info</div>
+                    <div id="personalList">
+                        <div class="sidebar-item">
+                            <span class="sidebar-label" contenteditable="true">Date of Birth</span>
+                            <div contenteditable="true">March 15, 1990</div>
+                            <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                        </div>
+                        <div class="sidebar-item">
+                            <span class="sidebar-label" contenteditable="true">Nationality</span>
+                            <div contenteditable="true">American</div>
+                            <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                        </div>
+                        <div class="sidebar-item">
+                            <span class="sidebar-label" contenteditable="true">Languages</span>
+                            <div contenteditable="true">English (Native)<br>Spanish (B2)</div>
+                            <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                        </div>
+                        <div class="sidebar-item">
+                            <span class="sidebar-label" contenteditable="true">Father's Name</span>
+                            <div contenteditable="true">Mr. Robert Smith</div>
+                            <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                        </div>
+                        <div class="sidebar-item">
+                            <span class="sidebar-label" contenteditable="true">Gender</span>
+                            <div contenteditable="true">Male</div>
+                            <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                        </div>
+                        <div class="sidebar-item">
+                            <span class="sidebar-label" contenteditable="true">Marital Status</span>
+                            <div contenteditable="true">Single</div>
+                            <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                        </div>
+                    </div>
+                    <button class="add-btn" onclick="addPersonalInfo()">+ Add Info</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Skills</div>
+                    <div id="skillsList">
+                        <div class="skill-tag"><span contenteditable="true">PHP / Laravel</span><button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button></div>
+                        <div class="skill-tag"><span contenteditable="true">JavaScript</span><button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button></div>
+                        <div class="skill-tag"><span contenteditable="true">MySQL</span><button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button></div>
+                        <div class="skill-tag"><span contenteditable="true">React JS</span><button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button></div>
+                    </div>
+                    <button class="add-btn" onclick="addSkill()">+ Add Skill</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Hobbies</div>
+                    <div id="hobbiesList">
+                        <div class="sidebar-item">
+                            <span contenteditable="true">Reading Sci-Fi</span>
+                            <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                        </div>
+                        <div class="sidebar-item">
+                            <span contenteditable="true">Photography</span>
+                            <button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>
+                        </div>
+                    </div>
+                    <button class="add-btn" onclick="addHobby()">+ Add Hobby</button>
+                </div>
+
+                <button class="btn btn-dashed" onclick="addSidebarSection()">+ Add Custom Sidebar Section</button>
+
+            </aside>
+
+            <main class="main-content" id="mainArea">
+                
+                <div class="section">
+                    <div class="section-title">Profile</div>
+                    <div class="profile-text" contenteditable="true">
+                        Experienced software engineer with a strong background in developing scalable web applications. 
+                        Committed to writing clean code and optimizing performance. Looking for a challenging role 
+                        in a forward-thinking company.
+                    </div>
+                    <div class="ui-controls" style="margin-top:5px; background:#f9f9f9; padding:5px; font-size:0.8rem;">
+                        <select onchange="if(this.value) { this.parentElement.previousElementSibling.innerText = this.value; this.selectedIndex = 0; }">
+                            <option value="">-- Quick Profile Text --</option>
+                            <option value="Dedicated professional with 5+ years of experience in...">Experience 5+</option>
+                            <option value="Motivated fresher seeking an entry-level position to apply...">Fresher</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">
+                        Experience
+                        <div class="ui-controls" id="fresherControl" style="font-size:0.7rem; text-transform: none; display:inline-block; margin-left: 15px; font-weight: normal;">
+                            <label><input type="checkbox" id="fresherCheck" onchange="toggleFresherMode()"> I am a Fresher</label>
+                        </div>
+                    </div>
+                    
+                    <div id="experienceSection">
+                        <div class="entry">
+                            <div class="entry-header">
+                                <span class="entry-title" contenteditable="true">Senior Developer</span>
+                                <span class="entry-date" contenteditable="true">2020 - Present</span>
+                            </div>
+                            <div class="entry-subtitle" contenteditable="true">Tech Solutions Inc.</div>
+                            <div class="entry-content" contenteditable="true">
+                                • Spearheaded the migration of legacy code to modern frameworks.<br>
+                                • Mentored junior developers and conducted code reviews.
+                            </div>
+                            <button class="remove-btn" onclick="removeElement(this.parentElement)">X</button>
+                        </div>
+                    </div>
+
+                    <div id="fresherSection" style="display:none; font-style:italic; color:#777; margin-bottom:15px;">
+                        <p>Fresher - Seeking entry level opportunities. (Optional: Add Internships below)</p>
+                    </div>
+
+                    <button class="add-btn" id="addExpBtn" onclick="addExperience()">+ Add Experience</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Education</div>
+                    <table class="edu-table" id="eduTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">Year</th>
+                                <th style="width: 35%;">Degree / Course</th>
+                                <th style="width: 35%;">Institute / Board</th>
+                                <th style="width: 15%;">Grades</th>
+                                <th style="width: 0;"></th> </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><div contenteditable="true">2016-2020</div></td>
+                                <td><div contenteditable="true">B.Tech CS</div></td>
+                                <td><div contenteditable="true">State University</div></td>
+                                <td><div contenteditable="true">8.5 CGPA</div></td>
+                                <td><button class="remove-btn" onclick="removeElement(this.parentElement.parentElement)">x</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <button class="add-btn" onclick="addEducationRow()">+ Add Education Row</button>
+                </div>
+
+                <button class="btn btn-dashed" onclick="addMainSection()" style="margin-bottom: 20px;">+ Add Custom Main Section</button>
+
+                <div class="section" id="declarationSection">
+                    <div class="section-title">Declaration</div>
+                    <div class="declaration-text" contenteditable="true">
+                        I hereby declare that the above-mentioned information is correct to the best of my knowledge and belief.
+                    </div>
+                </div>
+
+                <div class="footer-sign">
+                    <div class="sign-box"><div contenteditable="true">Date: <?php echo date("d/m/Y"); ?></div></div>
+                    <div class="sign-box"><div class="sign-line" contenteditable="true">Signature</div></div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <div class="editor-panel">
+        <h3>Design Controls</h3>
+        
+        <div class="control-group">
+            <label>View Mode</label>
+            <button class="btn btn-outline-blue" onclick="toggleEditMode()" id="editToggleBtn">Lock / Preview</button>
+        </div>
+
+        <div class="control-group">
+            <label>Font Size</label>
+            <input type="range" min="12" max="18" value="14" oninput="updateVar('--base-font-size', this.value + 'px')">
+        </div>
+
+        <div class="control-group">
+            <label>Sidebar Width</label>
+            <input type="range" min="25" max="45" value="30" oninput="updateVar('--sidebar-width', this.value + '%')">
+        </div>
+
+        <div class="control-group">
+            <label>Content Padding</label>
+            <input type="range" min="20" max="60" value="40" oninput="updateVar('--content-padding', this.value + 'px')">
+        </div>
+
+        <div class="control-group">
+            <label>Section Gap</label>
+            <input type="range" min="10" max="50" value="20" oninput="updateVar('--section-gap', this.value + 'px')">
+        </div>
+
+        <div class="control-group">
+            <label>Item Gap</label>
+            <input type="range" min="5" max="30" value="15" oninput="updateVar('--item-gap', this.value + 'px')">
+        </div>
+
+        <div style="margin-top:auto;">
+            <form action="" method="POST" target="_blank" onsubmit="return false">
+                <input type="hidden" name="resume_content" id="resumeContentInput">
+                <input type="hidden" name="computed_styles" id="computedStylesInput">
+                <button type="button" data-pdf-download="true" onclick="downloadResumePDF(event)" class="btn btn-primary">Save / Download</button>
+            </form>
+            <button class="btn btn-blue" onclick="window.print()">Print PDF</button>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const expSection = document.getElementById('experienceSection');
+            if(expSection && expSection.children.length > 0) {
+                document.getElementById('fresherControl').style.display = 'none';
+            }
+        };
+
+        function updateVar(variable, value) {
+            document.documentElement.style.setProperty(variable, value);
+        }
+
+        function toggleEditMode() {
+            document.body.classList.toggle('edit-mode');
+            const btn = document.getElementById('editToggleBtn');
+            if (document.body.classList.contains('edit-mode')) {
+                btn.textContent = "Lock / Preview";
+                btn.classList.add('btn-outline-blue');
+                btn.classList.remove('btn-blue');
+            } else {
+                btn.textContent = "Back to Edit Mode";
+                btn.classList.remove('btn-outline-blue');
+                btn.classList.add('btn-blue');
+            }
+        }
+
+        function removeElement(el) { 
+            if(confirm('Delete this item?')) {
+                el.remove(); 
+                const expSection = document.getElementById('experienceSection');
+                if(expSection && expSection.children.length === 0) {
+                    const fresherControl = document.getElementById('fresherControl');
+                    if(fresherControl) fresherControl.style.display = 'block'; 
+                }
+            }
+        }
+
+        function toggleFresherMode() {
+            const isFresher = document.getElementById('fresherCheck').checked;
+            const expSection = document.getElementById('experienceSection');
+            const fresherMsg = document.getElementById('fresherSection');
+            const addExpBtn = document.getElementById('addExpBtn');
+            if (isFresher) {
+                expSection.style.display = 'none'; addExpBtn.style.display = 'none'; fresherMsg.style.display = 'block';
+            } else {
+                expSection.style.display = 'block'; addExpBtn.style.display = ''; fresherMsg.style.display = 'none';
+            }
+        }
+
+        function addExperience() {
+            const container = document.getElementById('experienceSection');
+            const newBlock = document.createElement('div');
+            newBlock.className = 'entry';
+            newBlock.innerHTML = `
+                <div class="entry-header"><span class="entry-title" contenteditable="true">Job Title</span><span class="entry-date" contenteditable="true">Year - Year</span></div>
+                <div class="entry-subtitle" contenteditable="true">Company Name</div>
+                <div class="entry-content" contenteditable="true">Description...</div>
+                <button class="remove-btn" onclick="removeElement(this.parentElement)">X</button>`;
+            container.appendChild(newBlock);
+            document.getElementById('fresherControl').style.display = 'none';
+        }
+
+        function addEducationRow() {
+            const tbody = document.querySelector('#eduTable tbody');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `<td><div contenteditable="true">Year</div></td><td><div contenteditable="true">Degree</div></td><td><div contenteditable="true">Institute</div></td><td><div contenteditable="true">Grade</div></td><td><button class="remove-btn" onclick="removeElement(this.parentElement.parentElement)">x</button></td>`;
+            tbody.appendChild(newRow);
+        }
+
+        function addPersonalInfo() {
+            const container = document.getElementById('personalList');
+            const newDiv = document.createElement('div');
+            newDiv.className = 'sidebar-item';
+            newDiv.innerHTML = `<span class="sidebar-label" contenteditable="true">Label</span><div contenteditable="true">Value</div><button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>`;
+            container.appendChild(newDiv);
+        }
+
+        function addSkill() {
+            const container = document.getElementById('skillsList');
+            const newTag = document.createElement('div');
+            newTag.className = 'skill-tag';
+            newTag.innerHTML = `<span contenteditable="true">New Skill</span><button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>`;
+            container.appendChild(newTag);
+        }
+
+        function addHobby() {
+            const container = document.getElementById('hobbiesList');
+            const newTag = document.createElement('div');
+            newTag.className = 'sidebar-item';
+            newTag.innerHTML = `<span contenteditable="true">New Hobby</span><button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>`;
+            container.appendChild(newTag);
+        }
+
+        /* --- NEW FUNCTIONALITY: ADD CUSTOM SECTIONS --- */
+
+        // Helper to add a generic item to a custom sidebar section
+        function addGenericSidebarItem(btn) {
+            const container = btn.previousElementSibling;
+            const newDiv = document.createElement('div');
+            newDiv.className = 'sidebar-item';
+            newDiv.innerHTML = `<span contenteditable="true">New Item</span><button class="remove-btn-skill" onclick="removeElement(this.parentElement)">x</button>`;
+            container.appendChild(newDiv);
+        }
+
+        // Helper to add a generic item to a custom main section
+        function addGenericMainItem(btn) {
+            const container = btn.previousElementSibling;
+            const newBlock = document.createElement('div');
+            newBlock.className = 'entry';
+            newBlock.innerHTML = `
+                <div class="entry-header"><span class="entry-title" contenteditable="true">Title</span><span class="entry-date" contenteditable="true">Date/Loc</span></div>
+                <div class="entry-content" contenteditable="true">Description...</div>
+                <button class="remove-btn" onclick="removeElement(this.parentElement)">X</button>`;
+            container.appendChild(newBlock);
+        }
+
+        function addSidebarSection() {
+            const sidebar = document.getElementById('sidebarArea');
+            const btn = sidebar.querySelector('.btn-dashed'); // The add button
+            
+            const newSection = document.createElement('div');
+            newSection.className = 'section';
+            newSection.innerHTML = `
+                <div class="section-title">
+                    <span contenteditable="true">New Section</span>
+                    <button class="remove-section-btn" onclick="removeElement(this.parentElement.parentElement)">Remove</button>
+                </div>
+                <div></div> <button class="add-btn" onclick="addGenericSidebarItem(this)">+ Add Item</button>
+            `;
+            
+            sidebar.insertBefore(newSection, btn);
+        }
+
+        function addMainSection() {
+            const mainContent = document.getElementById('mainArea');
+            const declSection = document.getElementById('declarationSection');
+            const mainBtn = mainContent.querySelector('.btn-dashed'); // The add button in main
+
+            const newSection = document.createElement('div');
+            newSection.className = 'section';
+            newSection.innerHTML = `
+                <div class="section-title">
+                    <span contenteditable="true">New Section</span>
+                    <button class="remove-section-btn" onclick="removeElement(this.parentElement.parentElement)">Remove</button>
+                </div>
+                <div></div> <button class="add-btn" onclick="addGenericMainItem(this)">+ Add Entry</button>
+            `;
+            
+            // Insert before the "Add Custom Main Section" button, which is before declaration
+            mainContent.insertBefore(newSection, mainBtn);
+        }
+
+        function prepareSave() {
+            const body = document.body;
+            const wasEditing = body.classList.contains('edit-mode');
+            if (wasEditing) body.classList.remove('edit-mode');
+            
+            const style = getComputedStyle(document.documentElement);
+            let cssVars = "";
+            ['--base-font-size', '--section-gap', '--content-padding', '--item-gap', '--sidebar-width', '--line-height'].forEach(v => {
+                cssVars += `${v}: ${style.getPropertyValue(v)}; `;
+            });
+            
+            document.getElementById('computedStylesInput').value = cssVars;
+            document.getElementById('resumeContentInput').value = document.getElementById('resumeArea').innerHTML;
+            
+            if (wasEditing) body.classList.add('edit-mode');
+        }
+    </script>
+<script src="template_switcher.js?v=data-sync-4"></script>
+</body>
+</html>

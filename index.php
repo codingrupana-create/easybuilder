@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Builder - Select Template</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET & VARIABLES --- */
+        :root {
+            --primary: #6c5ce7;
+            --dark: #2d3436;
+            --bg-gray: #dfe6e9;
+            --preview-bg: #555;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-gray);
+            color: var(--dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- HEADER --- */
+        header {
+            background: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+        }
+
+        header h1 {
+            font-size: 1.2rem;
+            color: var(--primary);
+        }
+
+        header p {
+            font-size: 0.8rem;
+            color: #636e72;
+        }
+
+        /* --- LAYOUT --- */
+        .container {
+            display: flex;
+            height: calc(100vh - 60px);
+            width: 100%;
+        }
+
+        /* LEFT: SELECTION PANEL */
+        .selection-panel {
+            width: 320px;
+            background: white;
+            padding: 20px;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .section-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #b2bec3;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        /* TEMPLATE CARDS */
+        .template-card {
+            background: #fff;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .template-card:hover {
+            border-color: var(--primary);
+            background-color: #f8f9fa;
+            transform: translateX(3px);
+        }
+
+        .template-icon {
+            width: 40px;
+            height: 40px;
+            background: #eef1f5;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .template-info h3 {
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+        }
+
+        .template-info p {
+            font-size: 0.7rem;
+            color: #636e72;
+        }
+
+        /* RIGHT: PREVIEW AREA */
+        .preview-area {
+            flex-grow: 1;
+            background-color: var(--preview-bg);
+            position: relative;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 24px;
+        }
+
+        .preview-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+        }
+
+        /* PREVIEW WRAPPER
+           On desktop: transforms naturally, width/height auto.
+           On mobile:  JS sets explicit width+height = scaled px size so layout
+                       flow collapses to the rendered size (transform doesn't
+                       affect layout flow by itself). */
+        .scale-wrapper {
+            transform-origin: top center;
+            transition: transform 0.3s ease;
+            display: flex;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden; /* clips empty space below content on mobile */
+        }
+
+        /* THE PAPER (Exact A4 Dimensions) */
+        .paper-frame {
+            width: 210mm;
+            height: 297mm;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: none;
+            display: block;
+            pointer-events: none; /* Disable clicking inside preview */
+        }
+
+        /* Loading Indicator */
+        .loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1rem;
+            display: none;
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+        }
+
+        /* CTA BUTTON */
+        .use-template-btn {
+            position: static;
+            background: var(--primary);
+            color: white;
+            padding: 12px 35px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+            display: none;
+            z-index: 100;
+        }
+
+        .use-template-btn:hover {
+            background-color: #5649c0;
+            transform: translateY(-1px);
+        }
+
+        /* CATEGORY HEADER & AVATAR STYLES */
+        .category-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .category-avatar, .category-avatar-fallback {
+            /* You can easily handle avatar image sizes here in the future */
+            width: 220px;
+            height: 160px;
+            min-width: 220px;
+            min-height: 160px;
+            flex-shrink: 0;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid #ccc;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .category-avatar {
+            object-fit: cover;
+            object-position: top center;
+            background: #eef1f5;
+        }
+
+        .category-avatar-fallback {
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .category-label {
+            margin-bottom: 0px;
+            font-size: 0.85rem;
+            color: var(--primary);
+            text-align: center;
+        }
+
+        /* --- MOBILE RESPONSIVE --- */
+        @media (max-width: 768px) {
+            body {
+                overflow: auto;
+                min-height: 100vh;
+            }
+            header {
+                height: auto;
+                padding: 14px 16px;
+                align-items: flex-start;
+            }
+            header h1 {
+                font-size: 1.05rem;
+            }
+            header p {
+                font-size: 0.78rem;
+            }
+            .container {
+                flex-direction: column;
+                height: auto;
+                min-height: calc(100vh - 64px);
+            }
+            .selection-panel {
+                width: 100% !important;
+                height: auto !important;
+                max-height: 46vh !important;
+                padding: 16px !important;
+                border-right: none !important;
+                border-bottom: 2px solid #ddd;
+            }
+            /* preview-area: height is driven by content (scaled paper + button) */
+            .preview-area {
+                overflow: auto !important;
+                padding: 12px 8px 20px !important;
+                align-items: flex-start !important;
+                justify-content: center !important;
+                height: auto !important;
+                min-height: 0 !important;
+                flex-grow: 0 !important;
+            }
+            .preview-stack {
+                gap: 12px;
+                align-items: center;
+                width: 100%;
+                height: auto;
+            }
+            .use-template-btn {
+                width: min(320px, calc(100% - 12px));
+                max-width: 320px;
+                padding: 12px 20px !important;
+                font-size: 0.92rem !important;
+                text-align: center;
+            }
+            .template-card {
+                padding: 14px;
+            }
+            .template-card:hover {
+                transform: none;
+            }
+            .template-info h3 {
+                font-size: 0.95rem;
+            }
+            .template-info p {
+                font-size: 0.76rem;
+            }
+            .category-avatar, .category-avatar-fallback {
+                width: min(100%, 220px);
+                min-width: 0;
+                height: auto;
+                min-height: 0;
+                aspect-ratio: 11 / 8;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div>
+            <h1>Resume Builder</h1>
+            <p>Preview layouts and open the right template.</p>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <div class="selection-panel" id="selectionPanel">
+            <div class="section-label">Available Templates</div>
+            <div id="templateListLoading" style="padding: 10px; font-size: 0.9rem; color: #666;">Loading templates...
+            </div>
+        </div>
+
+        <div class="preview-area" id="previewContainer">
+            <div class="loader" id="loader">Loading...</div>
+
+            <div class="preview-stack" id="previewStack">
+                <div class="scale-wrapper" id="scaleWrapper">
+                    <iframe class="paper-frame" id="previewFrame" src=""></iframe>
+                </div>
+
+                <a href="#" id="ctaBtn" class="use-template-btn">Edit This Template</a>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const previewFrame = document.getElementById('previewFrame');
+        const scaleWrapper = document.getElementById('scaleWrapper');
+        const previewContainer = document.getElementById('previewContainer');
+        const loader = document.getElementById('loader');
+        const ctaBtn = document.getElementById('ctaBtn');
+        const requestedPreview = new URLSearchParams(window.location.search).get('preview');
+        let currentUrl = "";
+
+        // Fit A4 to screen
+        function adjustScale() {
+            const containerWidth = previewContainer.clientWidth;
+            const containerHeight = previewContainer.clientHeight;
+            const targetWidth = 794;   // Approx A4 width in px
+            const targetHeight = 1122; // Approx A4 height in px
+            const isMobile = window.innerWidth <= 768;
+
+            if (isMobile) {
+                // Scale to fit the available width of the preview area.
+                // IMPORTANT: On mobile we use CSS `zoom` instead of
+                // `transform: scale()` because zoom DOES affect layout flow —
+                // the element shrinks in BOTH visual size AND layout space,
+                // so there is no "ghost" gap below the preview.
+                const availableWidth = Math.max(containerWidth - 16, 200);
+                let scale = availableWidth / targetWidth;
+                if (scale > 1) scale = 1;
+                if (scale < 0.15) scale = 0.15;
+
+                // Apply zoom (affects layout) instead of transform (doesn't)
+                scaleWrapper.style.zoom          = scale;
+                scaleWrapper.style.transform     = '';
+                scaleWrapper.style.transformOrigin = '';
+                scaleWrapper.style.width         = '';
+                scaleWrapper.style.height        = '';
+            } else {
+                const availableWidth = Math.max(containerWidth - 48, 240);
+                const buttonSpace = (ctaBtn.style.display !== 'none' ? ctaBtn.offsetHeight : 0) + 56;
+                const availableHeight = Math.max(containerHeight - buttonSpace, 240);
+
+                let scale = Math.min(availableWidth / targetWidth, availableHeight / targetHeight);
+                if (scale > 1) scale = 1;
+                if (scale < 0.2) scale = 0.2;
+
+                scaleWrapper.style.zoom          = ''; // clear mobile zoom
+                scaleWrapper.style.transform     = `scale(${scale})`;
+                scaleWrapper.style.transformOrigin = 'top center';
+                // Let it size naturally on desktop
+                scaleWrapper.style.width = '';
+                scaleWrapper.style.height = '';
+            }
+        }
+
+        window.addEventListener('resize', adjustScale);
+
+        function showPreview(url) {
+            if (currentUrl === url) return;
+            currentUrl = url;
+
+            loader.style.display = 'block';
+            previewFrame.style.opacity = '0.5';
+
+            previewFrame.src = url;
+            ctaBtn.href = url;
+            ctaBtn.style.display = 'block';
+            adjustScale();
+
+            previewFrame.onload = function () {
+                loader.style.display = 'none';
+                previewFrame.style.opacity = '1';
+
+                try {
+                    const iframeDoc = previewFrame.contentWindow.document;
+                    previewFrame.contentWindow.scrollTo(0, 0);
+
+                    // --- INTELLIGENT CSS INJECTION ---
+                    // FIX: Added .editor-panel to the hidden list below
+                    let cssRules = `
+                        /* Common Cleanup */
+                        .control-panel, .ui-controls, .add-btn, .remove-btn, .remove-btn-skill, .remove-section-btn, .editor-panel, .btn-dashed { display: none !important; }
+
+                        body { 
+                            background-color: white !important; 
+                            margin: 0 !important; 
+                            overflow: hidden !important; 
+                            transform: none !important; 
+                            display: block !important; 
+                        }
+                        .resume-page {
+                            box-shadow: none !important;
+                        }
+                        [contenteditable] { border: none !important; background: transparent !important; }
+                    `;
+
+                    // --- TEMPLATE SPECIFIC FIXES ---
+
+                    if (url.includes('modern2withcolor.php')) {
+                        cssRules += `
+                            .resume-page { display: flex !important; flex-direction: row !important; height: 100% !important; }
+                            .left-panel { width: 35% !important; min-height: 100% !important; }
+                            .right-panel { flex: 1 !important; padding-bottom: 20px !important; }
+                        `;
+                    }
+                    else if (url.includes('creative_cards.php')) {
+                        cssRules += `
+                            .resume-page { display: flex !important; flex-direction: row !important; height: 100% !important; background-color: #f8f9fa !important; }
+                            .left-panel { width: 35% !important; min-height: 100% !important; }
+                            .right-panel { flex: 1 !important; padding-bottom: 20px !important; }
+                        `;
+                    }
+                    else if (url.includes('professional4.php')) {
+                        cssRules += `
+                            .resume-page { display: flex !important; flex-direction: column !important; height: 100% !important; }
+                            .resume-body { display: flex !important; flex-direction: row !important; flex: 1 !important; height: auto !important; }
+                            .left-sidebar { width: 30% !important; min-height: 100% !important; }
+                            .main-content { flex: 1 !important; }
+                        `;
+                    }
+                    else if (url.includes('timeline_modern.php')) {
+                        cssRules += `
+                            .resume-page { display: flex !important; flex-direction: column !important; width: 100% !important; min-height: 100% !important; box-shadow: none !important; margin: 0 !important; }
+                            .content-row { display: flex !important; flex: 1 !important; }
+                            .sidebar { width: 32% !important; min-height: 100% !important; }
+                            .main-content { width: 68% !important; }
+                            body { background-color: white !important; }
+                        `;
+                    }
+                    else if (url.includes('modern_minimal.php')) {
+                        cssRules += `
+                            .resume-page { display: flex !important; flex-direction: column !important; width: 100% !important; min-height: 100% !important; padding: 20px !important; }
+                            body { background-color: white !important; display: block !important; }
+                        `;
+                    }
+                    else if (url.includes('elegant_dark.php')) {
+                        cssRules += `
+                            .resume-page { 
+                                display: flex !important; 
+                                flex-direction: column !important; 
+                                width: 100% !important; 
+                                min-height: 100% !important; 
+                                padding: 20px !important; 
+                                background-color: white !important; 
+                                color: #333 !important;
+                            }
+                            body { background-color: white !important; display: block !important; }
+                        `;
+                    }
+                    else if (url.includes('structural_modern.php')) {
+                        cssRules += `
+                            .resume-page { 
+                                display: flex !important; 
+                                flex-direction: column !important; 
+                                width: 100% !important; 
+                                min-height: 100% !important; 
+                                padding: 30px !important; 
+                                background-color: white !important; 
+                                box-shadow: none !important;
+                                margin: 0 !important;
+                            }
+                            .resume-body { display: flex !important; flex-grow: 1 !important; }
+                            .sidebar { width: 32% !important; padding-right: 15px !important; }
+                            .main-content { flex: 1 !important; padding-left: 15px !important; }
+                            body { background-color: white !important; display: block !important; margin: 0 !important; }
+                        `;
+                    }
+                    else if (url.includes('modern')) {
+                        cssRules += `
+                            .resume-page { display: flex !important; flex-direction: row !important; }
+                            .left-panel { width: 35% !important; min-height: 100vh !important; }
+                            .right-panel { width: 65% !important; }
+                        `;
+                    }
+                    else if (url.includes('professional')) {
+                        cssRules += `
+                            .resume-body { display: flex !important; flex-direction: row !important; }
+                            .left-sidebar { width: 30% !important; min-height: 100vh !important; }
+                            .main-content { width: 70% !important; }
+                        `;
+                    }
+                    else if (url.includes('simpletwo.php') || url.includes('gurp.php')) {
+                        cssRules += `
+                            #resumeArea,
+                            .resume-wrapper {
+                                margin: 0 !important;
+                                gap: 0 !important;
+                            }
+                            .resume-page + .resume-page,
+                            .page-label,
+                            .fresher-controls {
+                                display: none !important;
+                            }
+                        `;
+                    }
+
+                    const style = iframeDoc.createElement('style');
+                    style.innerHTML = cssRules;
+                    iframeDoc.head.appendChild(style);
+                    adjustScale();
+
+                    // ── MOBILE: SMART CONTENT-HEIGHT DETECTION ──────────────
+                    // Templates use min-height:297mm forcing a full A4 page even
+                    // when content only fills half of it.  On mobile we:
+                    //  1. Inject a temp style that frees the height constraint
+                    //  2. Read body.scrollHeight (= real content height)
+                    //  3. Set the iframe to that exact height
+                    //  4. Remove the temp style & call adjustScale()
+                    // This clips empty A4 whitespace precisely for every template.
+                    if (window.innerWidth <= 768) {
+                        setTimeout(() => {
+                            try {
+                                const iDoc = previewFrame.contentWindow.document;
+
+                                // Inject temporary "unlock" style
+                                const tmpStyle = iDoc.createElement('style');
+                                tmpStyle.id = '__mobileHeightProbe';
+                                tmpStyle.innerHTML = `
+                                    html, body {
+                                        height: auto !important;
+                                        min-height: 0 !important;
+                                        overflow: visible !important;
+                                    }
+                                    .resume-page, .resume-wrapper, #resumeArea,
+                                    .page, .container, .main-container {
+                                        height: auto !important;
+                                        min-height: 0 !important;
+                                    }
+                                `;
+                                iDoc.head.appendChild(tmpStyle);
+
+                                // Allow layout to reflow, then measure
+                                setTimeout(() => {
+                                    try {
+                                        const realH = iDoc.body.scrollHeight;
+
+                                        // Remove the probe style (restores original look)
+                                        const probe = iDoc.getElementById('__mobileHeightProbe');
+                                        if (probe) probe.remove();
+
+                                        if (realH > 80 && realH < 1122) {
+                                            // Clamp with a little bottom breathing room
+                                            previewFrame.style.height = (realH + 20) + 'px';
+                                        } else {
+                                            // Content fills full A4 or detection failed —
+                                            // reset to A4 height
+                                            previewFrame.style.height = '297mm';
+                                        }
+                                        adjustScale();
+                                    } catch (ex) {
+                                        console.log('Height measure:', ex);
+                                    }
+                                }, 150);
+
+                            } catch (ex) {
+                                console.log('Height probe inject:', ex);
+                            }
+                        }, 300);
+                    }
+
+                } catch (e) {
+                    console.log("Localhost restriction: " + e);
+                }
+            };
+        }
+
+        async function loadTemplates() {
+            try {
+                const response = await fetch('get_templates.php');
+                const templates = await response.json();
+
+                const panel = document.getElementById('selectionPanel');
+
+                // Set up the panel with Search and a container for categories
+                panel.innerHTML = `
+                    <div style="position: sticky; top: -20px; background: white; padding-bottom: 10px; z-index: 5; margin-top: -5px;">
+                        <input type="text" id="searchInput" placeholder="Search templates or categories..." 
+                               style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-family: inherit; font-size: 0.85rem; outline: none;">
+                    </div>
+                    <div id="templateContainer"></div>
+                `;
+
+                const templateContainer = document.getElementById('templateContainer');
+                let defaultTemplate = '';
+                if (templates.length > 0) defaultTemplate = templates[0].file;
+                if (requestedPreview && templates.some(t => t.file === requestedPreview)) {
+                    defaultTemplate = requestedPreview;
+                }
+
+                // Template groups based on the user's request
+                const rupanaList = ['classic professional', 'gurp', 'modern minimal', 'simple', 'simpletwo', 'structural modern'];
+
+                const categorized = {
+                    'Rupana Caffe': {
+                        image: 'rupana_avatar.jpg',
+                        templates: []
+                    },
+                    'DR. Prabhdeep': {
+                        image: 'prabhdeep_avatar.jpg',
+                        templates: []
+                    }
+                };
+
+                templates.forEach(t => {
+                    let nameLower = t.name.toLowerCase().trim();
+                    if (rupanaList.includes(nameLower)) {
+                        categorized['Rupana Caffe'].templates.push(t);
+                    } else {
+                        categorized['DR. Prabhdeep'].templates.push(t);
+                    }
+                });
+
+                function renderCategories(filter = '') {
+                    templateContainer.innerHTML = '';
+                    filter = filter.toLowerCase().trim();
+                    let firstTemplateFound = false;
+
+                    for (const [catName, catData] of Object.entries(categorized)) {
+                        const filteredTemplates = catData.templates.filter(t =>
+                            t.name.toLowerCase().includes(filter) || catName.toLowerCase().includes(filter)
+                        );
+
+                        if (filteredTemplates.length > 0) {
+                            const catDiv = document.createElement('div');
+                            catDiv.style.marginBottom = '20px';
+
+                            // Category Header with Passport Size Photo
+                            catDiv.innerHTML = `
+                                <div class="category-header">
+                                    <img class="category-avatar" alt="${catName}">
+                                    <div class="section-label category-label">
+                                        ${catName.toUpperCase()}
+                                    </div>
+                                </div>
+                                <div class="template-list-group" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                            `;
+
+                            // HTML/CSS fallback if image is missing
+                            const avatarImg = catDiv.querySelector('.category-avatar');
+                            avatarImg.src = catData.image;
+                            avatarImg.onerror = function() {
+                                // Replaces the broken image with a clean HTML/CSS placeholder
+                                const fallback = document.createElement('div');
+                                fallback.className = 'category-avatar-fallback';
+                                const initials = catName.split(' ').map(w => w.charAt(0)).join('').substring(0, 2);
+                                fallback.innerText = initials;
+                                this.replaceWith(fallback);
+                            };
+
+                            const groupDiv = catDiv.querySelector('.template-list-group');
+
+                            filteredTemplates.forEach(t => {
+                                if (!firstTemplateFound && filter !== '') {
+                                    showPreview(t.file);
+                                    firstTemplateFound = true;
+                                }
+                                const card = document.createElement('div');
+                                card.className = 'template-card';
+                                // Unified click/touch handler
+                                card.onclick = () => {
+                                    showPreview(t.file);
+                                    // Scroll to show the preview on mobile
+                                    if (window.innerWidth <= 768) {
+                                        setTimeout(() => {
+                                            document.getElementById('previewContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }, 100);
+                                    }
+                                };
+                                card.onmouseenter = () => {
+                                    if (window.innerWidth > 768) showPreview(t.file);
+                                };
+
+                                card.innerHTML = `
+                                    <div class="template-icon">${t.icon}</div>
+                                    <div class="template-info">
+                                        <h3>${t.name}</h3>
+                                        <p>Click to Preview</p>
+                                    </div>
+                                `;
+                                groupDiv.appendChild(card);
+                            });
+
+                            templateContainer.appendChild(catDiv);
+                        }
+                    }
+
+                    if (templateContainer.innerHTML === '') {
+                        templateContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666; font-size: 0.9rem;">No templates found.</div>';
+                    }
+                }
+
+                // Initial Render
+                renderCategories();
+
+                // Search functionality
+                document.getElementById('searchInput').addEventListener('input', (e) => {
+                    renderCategories(e.target.value);
+                });
+
+                // Set initial preview
+                if (defaultTemplate) {
+                    showPreview(defaultTemplate);
+                }
+            } catch (e) {
+                console.error('Failed to load templates:', e);
+                const panel = document.getElementById('selectionPanel');
+                panel.innerHTML = '<div class="section-label">Available Templates</div><div style="padding: 10px; font-size: 0.9rem; color: red;">Error loading template list.</div>';
+            }
+        }
+
+        adjustScale();
+        window.onload = function () {
+            adjustScale();
+            loadTemplates();
+        }
+    </script>
+</body>
+
+</html>
